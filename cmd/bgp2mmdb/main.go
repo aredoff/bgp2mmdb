@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"flag"
 	"fmt"
 	"io"
@@ -47,7 +48,6 @@ func main() {
 	var (
 		inputList  = flag.String("input", "ripe", "Comma-separated list of input files or URLs, if 'ripe', will download the latest bview's from RIPE")
 		outputFile = flag.String("output", "asn.mmdb", "Output MMDB file")
-		memLimit   = flag.Int("mem", 2048, "Memory limit in MB")
 		lookupIP   = flag.String("lookup", "", "IP address to lookup in existing MMDB file")
 		mmdbFile   = flag.String("mmdb", "asn.mmdb", "MMDB file path for lookup mode")
 	)
@@ -82,7 +82,7 @@ func main() {
 	}
 
 	start := time.Now()
-	conv := bgp2mmdb.NewConverter(*memLimit)
+	conv := bgp2mmdb.NewConverter()
 
 	// Process each input
 	for i, input := range inputs {
@@ -173,10 +173,15 @@ func downloadFile(url string, index int) (string, error) {
 	// Add index to make filename unique
 	fileName := fmt.Sprintf("%d_%s", index, baseName)
 
-	// Check if file already exists
-	if _, err := os.Stat(fileName); err == nil {
-		fmt.Printf("File %s already exists, skipping download\n", fileName)
-		return fileName, nil
+	// Check if file already exists and is valid
+	if stat, err := os.Stat(fileName); err == nil {
+		if stat.Size() > 1024 { // At least 1KB
+			fmt.Printf("File %s already exists, skipping download\n", fileName)
+			return fileName, nil
+		} else {
+			// Remove invalid file
+			os.Remove(fileName)
+		}
 	}
 
 	// Create HTTP request
@@ -215,6 +220,32 @@ func downloadFile(url string, index int) (string, error) {
 		return "", err
 	}
 
+	// Validate downloaded file size
+	if written < 1024 {
+		os.Remove(fileName)
+		return "", fmt.Errorf("downloaded file too small: %d bytes", written)
+	}
+
+	// Validate gzip format if .gz file
+	if strings.HasSuffix(fileName, ".gz") {
+		if err := validateGzipFile(fileName); err != nil {
+			os.Remove(fileName)
+			return "", fmt.Errorf("invalid gzip file: %w", err)
+		}
+	}
+
 	fmt.Printf("Downloaded: %.1f MB\n", float64(written)/1024/1024)
 	return fileName, nil
+}
+
+func validateGzipFile(fileName string) error {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Try to create gzip reader to validate file format
+	_, err = gzip.NewReader(file)
+	return err
 }

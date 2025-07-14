@@ -13,6 +13,7 @@ const (
 	MRTTypeTABLEDUMPV2       = 13
 	MRTSubtypePEERINDEXTABLE = 1
 	MRTSubtypeRIBIPV4UNICAST = 2
+	MRTSubtypeRIBIPV6UNICAST = 4
 
 	BGPAttrOrigin  = 1
 	BGPAttrASPath  = 2
@@ -111,7 +112,9 @@ func (p *MRTParser) parseMRTEntry(header *MRTHeader, data []byte) (interface{}, 
 		}
 		return entry, err
 	case MRTSubtypeRIBIPV4UNICAST:
-		return p.parseRIBEntry(data)
+		return p.parseRIBEntry(data, false) // IPv4
+	case MRTSubtypeRIBIPV6UNICAST:
+		return p.parseRIBEntry(data, true) // IPv6
 	}
 
 	return nil, nil
@@ -184,7 +187,7 @@ func (p *MRTParser) parsePeerIndexTable(data []byte) (*PeerIndexTable, error) {
 	return table, nil
 }
 
-func (p *MRTParser) parseRIBEntry(data []byte) (*RIBEntry, error) {
+func (p *MRTParser) parseRIBEntry(data []byte, isIPv6 bool) (*RIBEntry, error) {
 	if len(data) < 7 {
 		return nil, fmt.Errorf("insufficient data for RIB entry")
 	}
@@ -198,30 +201,65 @@ func (p *MRTParser) parseRIBEntry(data []byte) (*RIBEntry, error) {
 	prefixLen := data[offset]
 	offset++
 
-	prefixBytes := (prefixLen + 7) / 8
-	if len(data) < offset+int(prefixBytes)+2 {
-		return nil, fmt.Errorf("insufficient data for prefix")
+	var prefixBytes int
+	var prefixIP net.IP
+	var maskBits int
+	var prefixStr string
+
+	if isIPv6 {
+		// IPv6
+		maskBits = 128
+		prefixBytes = int((prefixLen + 7) / 8)
+		if prefixBytes > 16 {
+			prefixBytes = 16
+		}
+
+		if len(data) < offset+prefixBytes+2 {
+			return nil, fmt.Errorf("insufficient data for IPv6 prefix")
+		}
+
+		prefixData := make([]byte, 16)
+		if prefixBytes > 0 {
+			copy(prefixData, data[offset:offset+prefixBytes])
+		}
+		prefixIP = net.IP(prefixData)
+
+		if prefixLen > 0 {
+			prefixStr = fmt.Sprintf("%s/%d", prefixIP.String(), prefixLen)
+		} else {
+			prefixStr = "::/0"
+		}
+	} else {
+		// IPv4
+		maskBits = 32
+		prefixBytes = int((prefixLen + 7) / 8)
+		if prefixBytes > 4 {
+			prefixBytes = 4
+		}
+
+		if len(data) < offset+prefixBytes+2 {
+			return nil, fmt.Errorf("insufficient data for IPv4 prefix")
+		}
+
+		prefixData := make([]byte, 4)
+		if prefixBytes > 0 {
+			copy(prefixData, data[offset:offset+prefixBytes])
+		}
+		prefixIP = net.IPv4(prefixData[0], prefixData[1], prefixData[2], prefixData[3])
+
+		if prefixLen > 0 {
+			prefixStr = fmt.Sprintf("%s/%d", prefixIP.String(), prefixLen)
+		} else {
+			prefixStr = "0.0.0.0/0"
+		}
 	}
 
-	prefixData := make([]byte, 4)
-	if prefixBytes > 0 {
-		copy(prefixData, data[offset:offset+int(prefixBytes)])
-	}
-
-	prefixIP := net.IPv4(prefixData[0], prefixData[1], prefixData[2], prefixData[3])
 	entry.Prefix = net.IPNet{
 		IP:   prefixIP,
-		Mask: net.CIDRMask(int(prefixLen), 32),
+		Mask: net.CIDRMask(int(prefixLen), maskBits),
 	}
 
-	prefixStr := ""
-	if prefixLen > 0 {
-		prefixStr = fmt.Sprintf("%s/%d", prefixIP.String(), prefixLen)
-	} else {
-		prefixStr = "0.0.0.0/0"
-	}
-
-	offset += int(prefixBytes)
+	offset += prefixBytes
 
 	entryCount := binary.BigEndian.Uint16(data[offset : offset+2])
 	offset += 2

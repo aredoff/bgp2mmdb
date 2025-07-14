@@ -1,12 +1,13 @@
 # BGP to MMDB Converter
 
-High-performance utility for converting BGP RIB files in MRT format to MMDB databases for fast ASN lookup by IP address.
+High-performance utility for converting BGP RIB files in MRT format to MMDB databases for fast ASN lookup by IPv4 and IPv6 addresses.
 
 ## Features
 
 - 🚀 **Auto-download** - automatic BGP data download from all RIPE RRC collectors
 - 🌐 **Universal input** - files and URLs in one list
 - 📦 **Compressed files support** (.gz)
+- 🌍 **IPv4 and IPv6 support** - full dual-stack coverage
 - 💾 **Efficient memory usage** (< 2GB)
 - ⚡ **Fast conversion** of large files
 - 🔄 **Streaming parser** to minimize RAM usage
@@ -111,8 +112,11 @@ This provides comprehensive global BGP view coverage from 22 RIPE RRC collectors
 ### IP Lookup
 
 ```bash
-# Lookup IP in existing MMDB
+# Lookup IPv4 in existing MMDB
 ./bgp2mmdb -lookup 8.8.8.8 -mmdb asn.mmdb
+
+# Lookup IPv6 in existing MMDB  
+./bgp2mmdb -lookup 2001:4860:4860::8888 -mmdb asn.mmdb
 
 # Use default MMDB file
 ./bgp2mmdb -lookup 1.1.1.1
@@ -123,7 +127,6 @@ This provides comprehensive global BGP view coverage from 22 RIPE RRC collectors
 **Conversion mode:**
 - `-input` - comma-separated list of files and/or URLs, or "ripe" to auto-download from all RIPE RRC collectors (default: ripe)
 - `-output` - path for creating MMDB file (default: asn.mmdb)
-- `-mem` - memory limit in MB (default: 2048)
 
 **Lookup mode:**
 - `-lookup` - IP address to lookup in existing MMDB file
@@ -145,27 +148,36 @@ make test
 make clean
 ```
 
-## Data sources
+## Input format
 
-Supports BGP RIB data in MRT format:
-- **RIPE NCC**: https://data.ris.ripe.net/
-- **RRC collectors**: rrc00 (Amsterdam), rrc01 (London), etc.
-- **Format**: bview.YYYYMMDD.HHMM.gz
-- **Times**: 16:00, 08:00, 12:00, 00:00
+Supports BGP routing table data in the following formats:
+
+**MRT (Multi-threaded Routing Toolkit) format:**
+- BGP RIB (Routing Information Base) dumps
+- TABLE_DUMP_V2 message types
+- Peer Index Table with BGP speaker information
+- RIB entries with IPv4 and IPv6 prefix announcements and AS_PATH attributes
+- Both compressed (.gz) and uncompressed files
+
+**Supported MRT subtypes:**
+- `PEER_INDEX_TABLE` - BGP peer information
+- `RIB_IPV4_UNICAST` - IPv4 unicast routing entries
+- `RIB_IPV6_UNICAST` - IPv6 unicast routing entries
+- BGP attributes: ORIGIN, AS_PATH, NEXT_HOP
 
 ## Output format
 
 MMDB contains for each IP:
 - `asn` - autonomous system number
 - `organization` - organization name (AS{number})
-- `network` - network prefix
+- `network` - network prefix (e.g., 8.8.8.0/24 or 2001:db8::/32)
 
 ## Performance
 
 - **Memory**: < 2GB during conversion
 - **Speed**: ~500K records/sec
-- **MMDB size**: ~30MB for full BGP table
-- **Time**: ~2 minutes for full conversion
+- **MMDB size**: ~30-50MB for full BGP table
+- **Time**: ~2-3 minutes for full conversion
 
 ## Usage example
 
@@ -195,7 +207,7 @@ import (
 )
 
 func main() {
-    converter := bgp2mmdb.NewConverter(2048) // 2GB limit
+    converter := bgp2mmdb.NewConverter()
     
     // Process multiple files
     converter.ProcessFile("file1.gz")

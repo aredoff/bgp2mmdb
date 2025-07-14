@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
+)
+
+const (
+	defaultPrefixStartSize = 2000000
 )
 
 type Converter struct {
-	memLimitBytes int64
-	prefixMap     map[string]*PrefixInfo
-	batchSize     int
+	prefixMap map[string]*PrefixInfo
 }
 
 type PrefixInfo struct {
@@ -20,11 +21,9 @@ type PrefixInfo struct {
 	ASPath []uint32
 }
 
-func NewConverter(memLimitMB int) *Converter {
+func NewConverter() *Converter {
 	return &Converter{
-		memLimitBytes: int64(memLimitMB) * 1024 * 1024,
-		prefixMap:     make(map[string]*PrefixInfo),
-		batchSize:     10000,
+		prefixMap: make(map[string]*PrefixInfo, defaultPrefixStartSize),
 	}
 }
 
@@ -99,8 +98,8 @@ func (c *Converter) processMRTEntry(entry interface{}) error {
 	case *RIBEntry:
 		for _, ribEntry := range e.Entries {
 			if ribEntry.Prefix != "" && ribEntry.ASN != 0 {
-				// Skip default route - it interferes with proper lookup
-				if ribEntry.Prefix == "0.0.0.0/0" {
+				// Skip default routes - they interfere with proper make
+				if ribEntry.Prefix == "0.0.0.0/0" || ribEntry.Prefix == "::/0" {
 					continue
 				}
 
@@ -126,24 +125,6 @@ func (c *Converter) processMRTEntry(entry interface{}) error {
 
 		if len(c.prefixMap)%10000 == 0 && len(c.prefixMap) > 0 {
 			fmt.Printf("Processed %d prefixes...\n", len(c.prefixMap))
-		}
-
-		if len(c.prefixMap) >= c.batchSize {
-			return c.flushBatch()
-		}
-	}
-	return nil
-}
-
-func (c *Converter) flushBatch() error {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-
-	if int64(m.Alloc) > c.memLimitBytes*8/10 {
-		runtime.GC()
-		runtime.ReadMemStats(&m)
-		if int64(m.Alloc) > c.memLimitBytes*9/10 {
-			return fmt.Errorf("memory limit exceeded")
 		}
 	}
 	return nil
