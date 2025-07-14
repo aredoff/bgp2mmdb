@@ -53,6 +53,32 @@ make build
 ./bgp2mmdb -output asn.mmdb
 ```
 
+When using `-input ripe` or running without `-input`, the tool automatically downloads from these URLs:
+```
+http://data.ris.ripe.net/rrc00/latest-bview.gz  # Amsterdam, NL
+http://data.ris.ripe.net/rrc01/latest-bview.gz  # London, UK
+http://data.ris.ripe.net/rrc03/latest-bview.gz  # Amsterdam, NL
+http://data.ris.ripe.net/rrc04/latest-bview.gz  # Geneva, CH
+http://data.ris.ripe.net/rrc05/latest-bview.gz  # Vienna, AT
+http://data.ris.ripe.net/rrc06/latest-bview.gz  # Otemachi, JP
+http://data.ris.ripe.net/rrc07/latest-bview.gz  # Stockholm, SE
+http://data.ris.ripe.net/rrc10/latest-bview.gz  # Milan, IT
+http://data.ris.ripe.net/rrc11/latest-bview.gz  # New York, US
+http://data.ris.ripe.net/rrc12/latest-bview.gz  # Frankfurt, DE
+http://data.ris.ripe.net/rrc13/latest-bview.gz  # Moscow, RU
+http://data.ris.ripe.net/rrc14/latest-bview.gz  # Palo Alto, US
+http://data.ris.ripe.net/rrc15/latest-bview.gz  # São Paulo, BR
+http://data.ris.ripe.net/rrc16/latest-bview.gz  # Miami, US
+http://data.ris.ripe.net/rrc18/latest-bview.gz  # Barcelona, ES
+http://data.ris.ripe.net/rrc19/latest-bview.gz  # Johannesburg, ZA
+http://data.ris.ripe.net/rrc20/latest-bview.gz  # Zürich, CH
+http://data.ris.ripe.net/rrc21/latest-bview.gz  # Paris, FR
+http://data.ris.ripe.net/rrc22/latest-bview.gz  # Bucharest, RO
+http://data.ris.ripe.net/rrc23/latest-bview.gz  # Singapore, SG
+```
+
+This provides comprehensive global BGP view coverage from 20 RIPE RRC collectors worldwide.
+
 ### Local files
 
 ```bash
