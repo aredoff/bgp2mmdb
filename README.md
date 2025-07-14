@@ -60,11 +60,26 @@ make build
 ./bgp2mmdb -input "local_file.gz,https://example.com/remote_file.gz,another_local.gz" -output asn.mmdb
 ```
 
+### IP Lookup
+
+```bash
+# Lookup IP in existing MMDB
+./bgp2mmdb -lookup 8.8.8.8 -mmdb asn.mmdb
+
+# Use default MMDB file
+./bgp2mmdb -lookup 1.1.1.1
+```
+
 ### Parameters
 
+**Conversion mode:**
 - `-input` - comma-separated list of files and/or URLs, or "ripe" to auto-download from all RIPE RRC collectors (default: ripe)
 - `-output` - path for creating MMDB file (default: asn.mmdb)
 - `-mem` - memory limit in MB (default: 2048)
+
+**Lookup mode:**
+- `-lookup` - IP address to lookup in existing MMDB file
+- `-mmdb` - MMDB file path for lookup mode (default: asn.mmdb)
 
 ## Makefile commands
 
@@ -114,12 +129,12 @@ MMDB contains for each IP:
 ./bgp2mmdb -output asn.mmdb
 
 # Test result
-go run cmd/test/main.go -mmdb asn.mmdb 8.8.8.8
+./bgp2mmdb -lookup 8.8.8.8 -mmdb asn.mmdb
 ```
 
 Result:
 ```
-IP: 8.8.8.8 | ASN: 3356 | Network: 8.0.0.0/12
+IP: 8.8.8.8 | ASN: 15169 | Organization: AS15169 | Network: 8.8.8.0/24
 ```
 
 ## Usage as library

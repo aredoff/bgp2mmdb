@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/aredoff/bgp2mmdb"
+	"github.com/oschwald/maxminddb-golang"
 )
 
 var (
@@ -44,9 +46,18 @@ func main() {
 		inputList  = flag.String("input", "ripe", "Comma-separated list of input files or URLs, if 'ripe', will download the latest bview's from RIPE")
 		outputFile = flag.String("output", "asn.mmdb", "Output MMDB file")
 		memLimit   = flag.Int("mem", 2048, "Memory limit in MB")
+		lookupIP   = flag.String("lookup", "", "IP address to lookup in existing MMDB file")
+		mmdbFile   = flag.String("mmdb", "asn.mmdb", "MMDB file path for lookup mode")
 	)
 	flag.Parse()
 
+	// Lookup mode
+	if *lookupIP != "" {
+		lookupMode(*mmdbFile, *lookupIP)
+		return
+	}
+
+	// Convert mode
 	if *inputList == "" {
 		flag.Usage()
 		os.Exit(1)
@@ -116,6 +127,32 @@ func main() {
 
 	if fileInfo, err := os.Stat(*outputFile); err == nil {
 		fmt.Printf("Output file size: %.2f MB\n", float64(fileInfo.Size())/1024/1024)
+	}
+}
+
+func lookupMode(mmdbPath, ipAddr string) {
+	db, err := maxminddb.Open(mmdbPath)
+	if err != nil {
+		log.Fatalf("Error opening MMDB: %v", err)
+	}
+	defer db.Close()
+
+	ip := net.ParseIP(ipAddr)
+	if ip == nil {
+		log.Fatalf("Invalid IP: %s", ipAddr)
+	}
+
+	var record bgp2mmdb.ASNRecord
+	err = db.Lookup(ip, &record)
+	if err != nil {
+		log.Fatalf("Lookup failed for %s: %v", ipAddr, err)
+	}
+
+	if record.ASN == 0 {
+		fmt.Printf("IP: %s | No data found\n", ipAddr)
+	} else {
+		fmt.Printf("IP: %s | ASN: %d | Organization: %s | Network: %s\n",
+			ipAddr, record.ASN, record.Organization, record.Network)
 	}
 }
 

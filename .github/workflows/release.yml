@@ -82,6 +82,9 @@ jobs:
           
           # Or use custom files/URLs
           ./bgp2mmdb -input file1.gz,file2.gz -output asn.mmdb
+
+          # Lookup mode
+          ./bgp2mmdb -lookup 8.8.8.8 -mmdb asn.mmdb
           ```
         draft: false
         prerelease: false 
