@@ -75,9 +75,11 @@ http://data.ris.ripe.net/rrc20/latest-bview.gz  # Zürich, CH
 http://data.ris.ripe.net/rrc21/latest-bview.gz  # Paris, FR
 http://data.ris.ripe.net/rrc22/latest-bview.gz  # Bucharest, RO
 http://data.ris.ripe.net/rrc23/latest-bview.gz  # Singapore, SG
+http://data.ris.ripe.net/rrc24/latest-bview.gz  # Montreal, CA
+http://data.ris.ripe.net/rrc26/latest-bview.gz  # Dubai, AE
 ```
 
-This provides comprehensive global BGP view coverage from 20 RIPE RRC collectors worldwide.
+This provides comprehensive global BGP view coverage from 22 RIPE RRC collectors worldwide.
 
 ### Local files
 
