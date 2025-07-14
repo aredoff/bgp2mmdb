@@ -14,6 +14,26 @@ High-performance utility for converting BGP RIB files in MRT format to MMDB data
 
 ## Installation
 
+### Download from releases (recommended)
+
+```bash
+# Linux x86-64
+wget https://github.com/aredoff/bgp2mmdb/releases/latest/download/bgp2mmdb-linux-amd64
+chmod +x bgp2mmdb-linux-amd64
+./bgp2mmdb-linux-amd64 -output asn.mmdb
+
+# Linux ARM64
+wget https://github.com/aredoff/bgp2mmdb/releases/latest/download/bgp2mmdb-linux-arm64
+chmod +x bgp2mmdb-linux-arm64
+./bgp2mmdb-linux-arm64 -output asn.mmdb
+
+# Windows x86-64
+# Download from: https://github.com/aredoff/bgp2mmdb/releases/latest/download/bgp2mmdb-windows-amd64.exe
+# Then run: bgp2mmdb-windows-amd64.exe -output asn.mmdb
+```
+
+### Build from source
+
 ```bash
 git clone https://github.com/aredoff/bgp2mmdb.git
 cd bgp2mmdb
