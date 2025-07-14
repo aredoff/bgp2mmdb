@@ -4,7 +4,8 @@ High-performance utility for converting BGP RIB files in MRT format to MMDB data
 
 ## Features
 
-- 🚀 **Auto-download** - downloads latest BGP data from RIPE
+- 🚀 **Auto-download** - automatic BGP data download from all RIPE RRC collectors
+- 🌐 **Universal input** - files and URLs in one list
 - 📦 **Compressed files support** (.gz)
 - 💾 **Efficient memory usage** (< 2GB)
 - ⚡ **Fast conversion** of large files
@@ -22,58 +23,57 @@ make build
 
 ## Usage
 
-### Auto-download and convert (recommended)
+### Auto-download from RIPE (recommended)
 
 ```bash
-# Download latest BGP data from RIPE and convert
-./bgp2mmdb -download -output asn.mmdb
+# Download latest BGP views from all RIPE RRC collectors
+./bgp2mmdb -input ripe -output asn.mmdb
 
-# Use multiple RRC collectors for better coverage (recommended)
-./bgp2mmdb -download -multi -output asn.mmdb
-
-# Use custom list of RRC collectors
-./bgp2mmdb -download -multi -rrcs "rrc00,rrc01,rrc05,rrc10" -output asn.mmdb
-
-# Use different RRC collector
-./bgp2mmdb -download -rrc rrc01 -output asn.mmdb
-
-# Keep downloaded file
-./bgp2mmdb -download -keep -output asn.mmdb
+# Same as above (default behavior)
+./bgp2mmdb -output asn.mmdb
 ```
 
-### Convert local file
+### Local files
 
 ```bash
-./bgp2mmdb -input bview.20250711.0800.gz -output asn.mmdb
+# Single file
+./bgp2mmdb -input bview.20250714.0800.gz -output asn.mmdb
+
+# Multiple files
+./bgp2mmdb -input file1.gz,file2.gz,file3.gz -output asn.mmdb
+```
+
+### Download URLs
+
+```bash
+# Single URL
+./bgp2mmdb -input https://data.ris.ripe.net/rrc00/2025.01/bview.20250114.0800.gz -output asn.mmdb
+
+# Multiple URLs
+./bgp2mmdb -input "https://data.ris.ripe.net/rrc00/2025.01/bview.20250114.0800.gz,https://data.ris.ripe.net/rrc01/2025.01/bview.20250114.0800.gz" -output asn.mmdb
+```
+
+### Mixed mode
+
+```bash
+# Files and URLs together
+./bgp2mmdb -input "local_file.gz,https://example.com/remote_file.gz,another_local.gz" -output asn.mmdb
 ```
 
 ### Parameters
 
-- `-download` - download latest BGP data from RIPE
-- `-input` - path to local MRT file (.gz supported)
-- `-output` - path for creating MMDB file
-- `-rrc` - RRC collector (rrc00, rrc01, ..., rrc25, default rrc00)
-- `-multi` - use multiple RRC collectors (rrc00-rrc05) for better coverage
-- `-keep` - keep downloaded file after conversion
-- `-mem` - memory limit in MB (default 2048)
+- `-input` - comma-separated list of files and/or URLs, or "ripe" to auto-download from all RIPE RRC collectors (default: ripe)
+- `-output` - path for creating MMDB file (default: asn.mmdb)
+- `-mem` - memory limit in MB (default: 2048)
 
 ## Makefile commands
 
 ```bash
-# Download and convert (single RRC)
-make download
-
-# Download from multiple RRC (best coverage)
-make download-multi
+# Build
+make build
 
 # Convert local file
 make convert
-
-# Use RRC01
-make convert-rrc01
-
-# Download with file keeping
-make download-keep
 
 # Test MMDB
 make test
@@ -84,12 +84,11 @@ make clean
 
 ## Data sources
 
-Automatically downloads BGP RIB data from:
+Supports BGP RIB data in MRT format:
 - **RIPE NCC**: https://data.ris.ripe.net/
-- **RRC collectors**: rrc00 (Amsterdam) by default, or multiple (rrc00-rrc05) with `-multi`
+- **RRC collectors**: rrc00 (Amsterdam), rrc01 (London), etc.
 - **Format**: bview.YYYYMMDD.HHMM.gz
-- **Times**: 16:00, 08:00, 12:00, 00:00 (in priority order)
-- **Multi-RRC**: Better prefix coverage by combining data from multiple collectors
+- **Times**: 16:00, 08:00, 12:00, 00:00
 
 ## Output format
 
@@ -108,11 +107,11 @@ MMDB contains for each IP:
 ## Usage example
 
 ```bash
-# Download and convert from multiple RRC (best coverage)
-./bgp2mmdb -download -multi -output asn.mmdb
+# Auto-download from all RIPE RRC collectors (recommended)
+./bgp2mmdb -input ripe -output asn.mmdb
 
-# Download and convert from single RRC
-./bgp2mmdb -download -output asn.mmdb
+# Or simply (same as above)
+./bgp2mmdb -output asn.mmdb
 
 # Test result
 go run cmd/test/main.go -mmdb asn.mmdb 8.8.8.8
@@ -134,7 +133,13 @@ import (
 
 func main() {
     converter := bgp2mmdb.NewConverter(2048) // 2GB limit
-    err := converter.Convert("input.gz", "output.mmdb")
+    
+    // Process multiple files
+    converter.ProcessFile("file1.gz")
+    converter.ProcessFile("file2.gz")
+    
+    // Write MMDB
+    err := converter.WriteMMDB("output.mmdb")
     if err != nil {
         panic(err)
     }

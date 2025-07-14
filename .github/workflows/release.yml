@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            ext: ""
+          - os: linux
+            arch: arm64
+            ext: ""
+          - os: windows
+            arch: amd64
+            ext: ".exe"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Build
+      env:
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+      run: |
+        go build -ldflags="-s -w" -o bgp2mmdb-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} ./cmd/bgp2mmdb
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: bgp2mmdb-${{ matrix.os }}-${{ matrix.arch }}
+        path: bgp2mmdb-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+
+    - name: Prepare release files
+      run: |
+        mkdir -p release
+        find ./artifacts -name "bgp2mmdb-*" -type f -exec cp {} ./release/ \;
+        ls -la ./release/
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: |
+          ./release/*
+        body: |
+          ## BGP to MMDB Converter Release
+          
+          Download the appropriate binary for your platform:
+          - `bgp2mmdb-linux-amd64` - Linux x86-64
+          - `bgp2mmdb-linux-arm64` - Linux ARM64  
+          - `bgp2mmdb-windows-amd64.exe` - Windows x86-64
+          
+          ### Usage
+          ```bash
+          # Auto-download from RIPE (recommended)
+          ./bgp2mmdb -input ripe -output asn.mmdb
+          
+          # Or use custom files/URLs
+          ./bgp2mmdb -input file1.gz,file2.gz -output asn.mmdb
+          ```
+        draft: false
+        prerelease: false 
