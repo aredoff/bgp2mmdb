@@ -169,7 +169,6 @@ Supports BGP routing table data in the following formats:
 
 MMDB contains for each IP:
 - `asn` - autonomous system number
-- `organization` - organization name (AS{number})
 - `network` - network prefix (e.g., 8.8.8.0/24 or 2001:db8::/32)
 
 ## Performance
@@ -194,7 +193,7 @@ MMDB contains for each IP:
 
 Result:
 ```
-IP: 8.8.8.8 | ASN: 15169 | Organization: AS15169 | Network: 8.8.8.0/24
+IP: 8.8.8.8 | ASN: 15169 | Network: 8.8.8.0/24
 ```
 
 ## Usage as library

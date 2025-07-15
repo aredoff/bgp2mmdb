@@ -153,8 +153,7 @@ func lookupMode(mmdbPath, ipAddr string) {
 	if record.ASN == 0 {
 		fmt.Printf("IP: %s | No data found\n", ipAddr)
 	} else {
-		fmt.Printf("IP: %s | ASN: %d | Organization: %s | Network: %s\n",
-			ipAddr, record.ASN, record.Organization, record.Network)
+		fmt.Printf("IP: %s | ASN: %d | Network: %s\n", ipAddr, record.ASN, record.Network)
 	}
 }
 

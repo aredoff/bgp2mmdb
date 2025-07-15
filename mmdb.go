@@ -10,9 +10,8 @@ import (
 )
 
 type ASNRecord struct {
-	ASN          uint32 `maxminddb:"asn"`
-	Organization string `maxminddb:"organization"`
-	Network      string `maxminddb:"network"`
+	ASN     uint32 `maxminddb:"asn"`
+	Network string `maxminddb:"network"`
 }
 
 func CreateMMDB(prefixMap map[string]*PrefixInfo, outputFile string) error {
@@ -37,9 +36,8 @@ func CreateMMDB(prefixMap map[string]*PrefixInfo, outputFile string) error {
 		}
 
 		record := mmdbtype.Map{
-			"asn":          mmdbtype.Uint32(info.ASN),
-			"organization": mmdbtype.String(fmt.Sprintf("AS%d", info.ASN)),
-			"network":      mmdbtype.String(prefix),
+			"asn":     mmdbtype.Uint32(info.ASN),
+			"network": mmdbtype.String(prefix),
 		}
 
 		err = writer.Insert(network, record)
