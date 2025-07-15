@@ -68,7 +68,7 @@ func main() {
 	var inputs []string
 	if *inputList == "ripe" {
 		for _, rrc := range defaultRRC {
-			inputs = append(inputs, fmt.Sprintf("http://data.ris.ripe.net/%s/latest-bview.gz", rrc))
+			inputs = append(inputs, fmt.Sprintf("https://data.ris.ripe.net/%s/latest-bview.gz", rrc))
 		}
 	} else {
 		inputs = strings.Split(*inputList, ",")
